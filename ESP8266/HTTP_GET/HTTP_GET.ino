@@ -1,24 +1,56 @@
+/*******************************************************************
+    A sample project for making a HTTP/HTTPS GET request on an ESP8266
+
+    It will connect to the given request and print the body to
+    serial monitor
+
+    Parts:
+    D1 Mini ESP8266 * - http://s.click.aliexpress.com/e/uzFUnIe
+
+ *  * = Affilate
+
+    If you find what I do usefuland would like to support me,
+    please consider becoming a sponsor on Github
+    https://github.com/sponsors/witnessmenow/
+
+
+    Written by Brian Lough
+    YouTube: https://www.youtube.com/brianlough
+    Tindie: https://www.tindie.com/stores/brianlough/
+    Twitter: https://twitter.com/witnessmenow
+ *******************************************************************/
+
+
+// ----------------------------
+// Standard Libraries
+// ----------------------------
+
 #include <ESP8266WiFi.h>
 #include <WiFiClientSecure.h>
-
-#include <ArduinoJson.h>
 
 //------- Replace the following! ------
 char ssid[] = "SSID";       // your network SSID (name)
 char password[] = "PASS";  // your network key
 
+// For Non-HTTPS requests
+// WiFiClient client;
+
+// For HTTPS requests
 WiFiClientSecure client;
 
+
+// Just the base of the URL you want to connect to
 #define TEST_HOST "www.tindie.com"
+
+// OPTIONAL - The finferprint of the site you want to connect to.
 #define TEST_HOST_FINGERPRINT "BC 73 A5 9C 6E EE 38 43 A6 37 FC 32 CF 08 16 DC CF F1 5A 66"
 
 
 void setup() {
-  // put your setup code here, to run once:
+
   Serial.begin(115200);
 
-  // Set WiFi to station mode and disconnect from an AP if it was Previously
-  // connected
+  // Connect to the WiFI
   WiFi.mode(WIFI_STA);
   WiFi.disconnect();
   delay(100);
@@ -37,12 +69,20 @@ void setup() {
   IPAddress ip = WiFi.localIP();
   Serial.println(ip);
 
+  //--------
+
+  // If you don't need to check the fingerprint
+  // client.setInsecure();
+
+  // If you want to check the fingerprint
   client.setFingerprint(TEST_HOST_FINGERPRINT);
+
   makeHTTPRequest();
 }
 
 void makeHTTPRequest() {
-  client.setTimeout(10000);
+
+  // Opening connection to server (Use 80 as port if HTTP)
   if (!client.connect(TEST_HOST, 443))
   {
     Serial.println(F("Connection failed"));
@@ -54,6 +94,7 @@ void makeHTTPRequest() {
 
   // Send HTTP request
   client.print(F("GET "));
+  // This is the second half of a request (everything that comes after the base URL)
   client.print("/api/v1/order/?format=json&limit=1&username=brianlough&api_key=refwv43tgfvdfbe4444&offset=4");
   client.println(F(" HTTP/1.1"));
 
@@ -87,7 +128,12 @@ void makeHTTPRequest() {
     return;
   }
 
-  while(client.available() && client.peek() != '{')
+  // This is probably not needed for most, but I had issues
+  // with the Tindie api where sometimes there were random
+  // characters coming back before the body of the response.
+  // This will cause no hard to leave it in
+  // peek() will look at the character, but not take it off the queue
+  while (client.available() && client.peek() != '{')
   {
     char c = 0;
     client.readBytes(&c, 1);
@@ -95,7 +141,9 @@ void makeHTTPRequest() {
     Serial.println("BAD");
   }
 
-  while(client.available()) {
+  // While the client is still availble read each
+  // byte and print to the serial monitor
+  while (client.available()) {
     char c = 0;
     client.readBytes(&c, 1);
     Serial.print(c);
