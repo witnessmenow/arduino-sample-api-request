@@ -8,9 +8,9 @@ This repo will provide simple examples of making a request to an API on an ardui
 
 ## Extra information
 
-#### Video on connecting to APIs using an ESP8266 (click image)
+- **Video on connecting to APIs using an ESP8266 (click image)**
 
-[![Connecting to APIs using an ESP8266](https://img.youtube.com/vi/HUjFMVOpXBM/0.jpg)](https://www.youtube.com/watch?v=HUjFMVOpXBM)
+  [![Connecting to APIs using an ESP8266](https://img.youtube.com/vi/HUjFMVOpXBM/0.jpg)](https://www.youtube.com/watch?v=HUjFMVOpXBM)
 
 ## Help support what I do!
 
