@@ -1,15 +1,17 @@
 /*******************************************************************
-    A sample project for making a HTTP/HTTPS GET request on an ESP8266
+    A sample project for making a HTTP/HTTPS GET request on an ESP32
 
     It will connect to the given request and print the body to
     serial monitor
 
     Parts:
-    D1 Mini ESP8266 * - http://s.click.aliexpress.com/e/uzFUnIe
+    ESP32 Dev Board
+       Aliexpress: * - https://s.click.aliexpress.com/e/_dSi824B
+       Amazon: * - https://amzn.to/3gArkAY
 
  *  * = Affilate
 
-    If you find what I do usefuland would like to support me,
+    If you find what I do useful and would like to support me,
     please consider becoming a sponsor on Github
     https://github.com/sponsors/witnessmenow/
 
@@ -25,7 +27,7 @@
 // Standard Libraries
 // ----------------------------
 
-#include <ESP8266WiFi.h>
+#include <WiFi.h>
 #include <WiFiClientSecure.h>
 
 //------- Replace the following! ------
@@ -42,9 +44,31 @@ WiFiClientSecure client;
 // Just the base of the URL you want to connect to
 #define TEST_HOST "api.coingecko.com"
 
-// OPTIONAL - The finferprint of the site you want to connect to.
-#define TEST_HOST_FINGERPRINT "89 25 60 5D 50 44 FC C0 85 2B 98 D7 D3 66 52 28 68 4D E6 E2"
-// The finger print will change every few months.
+
+// Root cert of server we are connecting to
+// Baltimore CyberTrust Root - Expires 12 May 2025
+// (FYI, from a security point of view you should not trust certs from other people, including me!)
+const char *server_cert = "-----BEGIN CERTIFICATE-----\n"
+                                  "MIIDdzCCAl+gAwIBAgIEAgAAuTANBgkqhkiG9w0BAQUFADBaMQswCQYDVQQGEwJJ\n"
+                                  "RTESMBAGA1UEChMJQmFsdGltb3JlMRMwEQYDVQQLEwpDeWJlclRydXN0MSIwIAYD\n"
+                                  "VQQDExlCYWx0aW1vcmUgQ3liZXJUcnVzdCBSb290MB4XDTAwMDUxMjE4NDYwMFoX\n"
+                                  "DTI1MDUxMjIzNTkwMFowWjELMAkGA1UEBhMCSUUxEjAQBgNVBAoTCUJhbHRpbW9y\n"
+                                  "ZTETMBEGA1UECxMKQ3liZXJUcnVzdDEiMCAGA1UEAxMZQmFsdGltb3JlIEN5YmVy\n"
+                                  "VHJ1c3QgUm9vdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKMEuyKr\n"
+                                  "mD1X6CZymrV51Cni4eiVgLGw41uOKymaZN+hXe2wCQVt2yguzmKiYv60iNoS6zjr\n"
+                                  "IZ3AQSsBUnuId9Mcj8e6uYi1agnnc+gRQKfRzMpijS3ljwumUNKoUMMo6vWrJYeK\n"
+                                  "mpYcqWe4PwzV9/lSEy/CG9VwcPCPwBLKBsua4dnKM3p31vjsufFoREJIE9LAwqSu\n"
+                                  "XmD+tqYF/LTdB1kC1FkYmGP1pWPgkAx9XbIGevOF6uvUA65ehD5f/xXtabz5OTZy\n"
+                                  "dc93Uk3zyZAsuT3lySNTPx8kmCFcB5kpvcY67Oduhjprl3RjM71oGDHweI12v/ye\n"
+                                  "jl0qhqdNkNwnGjkCAwEAAaNFMEMwHQYDVR0OBBYEFOWdWTCCR1jMrPoIVDaGezq1\n"
+                                  "BE3wMBIGA1UdEwEB/wQIMAYBAf8CAQMwDgYDVR0PAQH/BAQDAgEGMA0GCSqGSIb3\n"
+                                  "DQEBBQUAA4IBAQCFDF2O5G9RaEIFoN27TyclhAO992T9Ldcw46QQF+vaKSm2eT92\n"
+                                  "9hkTI7gQCvlYpNRhcL0EYWoSihfVCr3FvDB81ukMJY2GQE/szKN+OMY3EU/t3Wgx\n"
+                                  "jkzSswF07r51XgdIGn9w/xZchMB5hbgF/X++ZRGjD8ACtPhSNzkE1akxehi/oCr0\n"
+                                  "Epn3o0WC4zxe9Z2etciefC7IpJ5OCBRLbf1wbWsaY71k5h+3zvDyny67G7fyUIhz\n"
+                                  "ksLi4xaNmjICq44Y3ekQEe5+NauQrz4wlHrQMz2nZQ/1/I6eYs9HRCwBXbsdtTLS\n"
+                                  "R9I4LtD+gdwyah617jzV/OeBHRnDJELqYzmp\n"
+                                  "-----END CERTIFICATE-----\n";
 
 
 void setup() {
@@ -53,30 +77,31 @@ void setup() {
 
   // Connect to the WiFI
   WiFi.mode(WIFI_STA);
-  WiFi.disconnect();
-  delay(100);
-
-  // Attempt to connect to Wifi network:
-  Serial.print("Connecting Wifi: ");
-  Serial.println(ssid);
   WiFi.begin(ssid, password);
+  Serial.println("");
+
+  // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
     delay(500);
+    Serial.print(".");
   }
   Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  IPAddress ip = WiFi.localIP();
-  Serial.println(ip);
+  Serial.print("Connected to ");
+  Serial.println(ssid);
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
 
   //--------
 
-  // If you don't need to check the fingerprint
-  // client.setInsecure();
+  // Checking the cert is the best way on an ESP32
+  // This will verify the server is trusted.
+  client.setCACert(server_cert);
 
-  // If you want to check the fingerprint
-  client.setFingerprint(TEST_HOST_FINGERPRINT);
+  // If you don't want to verify the server
+  // Unlike the fingerprint method of the ESP8266 which expires frequently
+  // the cert lasts years, so I don't see much reason to ever
+  // use this on the ESP32
+  // client.setInsecure();
 
   makeHTTPRequest();
 }
