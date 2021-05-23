@@ -5,6 +5,7 @@ This repo will provide simple examples of making a request to an API on an ardui
 ## Current Examples
 
 - GET request on ESP8266 and ESP32
+- Get request that is parsed to JSON (ESP8266/ESP32)
 
 ## Extra information
 
