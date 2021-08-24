@@ -20,7 +20,6 @@
     Twitter: https://twitter.com/witnessmenow
  *******************************************************************/
 
-
 // ----------------------------
 // Standard Libraries
 // ----------------------------
@@ -29,15 +28,14 @@
 #include <WiFiClientSecure.h>
 
 //------- Replace the following! ------
-char ssid[] = "SSID";       // your network SSID (name)
-char password[] = "password";  // your network key
+char ssid[] = "SSID";         // your network SSID (name)
+char password[] = "password"; // your network key
 
 // For Non-HTTPS requests
 // WiFiClient client;
 
 // For HTTPS requests
 WiFiClientSecure client;
-
 
 // Just the base of the URL you want to connect to
 #define TEST_HOST "api.coingecko.com"
@@ -46,8 +44,8 @@ WiFiClientSecure client;
 #define TEST_HOST_FINGERPRINT "89 25 60 5D 50 44 FC C0 85 2B 98 D7 D3 66 52 28 68 4D E6 E2"
 // The finger print will change every few months.
 
-
-void setup() {
+void setup()
+{
 
   Serial.begin(115200);
 
@@ -60,7 +58,8 @@ void setup() {
   Serial.print("Connecting Wifi: ");
   Serial.println(ssid);
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     Serial.print(".");
     delay(500);
   }
@@ -81,7 +80,8 @@ void setup() {
   makeHTTPRequest();
 }
 
-void makeHTTPRequest() {
+void makeHTTPRequest()
+{
 
   // Opening connection to server (Use 80 as port if HTTP)
   if (!client.connect(TEST_HOST, 443))
@@ -97,7 +97,11 @@ void makeHTTPRequest() {
   client.print(F("GET "));
   // This is the second half of a request (everything that comes after the base URL)
   client.print("/api/v3/simple/price?ids=ethereum%2Cbitcoin&vs_currencies=usd%2Ceur"); // %2C == ,
-  client.println(F(" HTTP/1.1"));
+
+  // HTTP 1.0 is ideal as the response wont be chunked
+  // But some API will return 1.1 regardless, so we need
+  // to handle both.
+  client.println(F(" HTTP/1.0"));
 
   //Headers
   client.print(F("Host: "));
@@ -114,11 +118,15 @@ void makeHTTPRequest() {
   // Check HTTP status
   char status[32] = {0};
   client.readBytesUntil('\r', status, sizeof(status));
-  if (strcmp(status, "HTTP/1.1 200 OK") != 0)
+
+  // Check if it responded "OK" with either HTTP 1.0 or 1.1
+  if (strcmp(status, "HTTP/1.0 200 OK") != 0 || strcmp(status, "HTTP/1.1 200 OK") != 0)
   {
-    Serial.print(F("Unexpected response: "));
-    Serial.println(status);
-    return;
+    {
+      Serial.print(F("Unexpected response: "));
+      Serial.println(status);
+      return;
+    }
   }
 
   // Skip HTTP headers
@@ -129,10 +137,9 @@ void makeHTTPRequest() {
     return;
   }
 
-  // This is probably not needed for most, but I had issues
-  // with the Tindie api where sometimes there were random
-  // characters coming back before the body of the response.
-  // This will cause no hard to leave it in
+  // For APIs that respond with HTTP/1.1 we need to remove
+  // the chunked data length values at the start of the body
+  //
   // peek() will look at the character, but not take it off the queue
   while (client.available() && client.peek() != '{')
   {
@@ -144,14 +151,15 @@ void makeHTTPRequest() {
 
   // While the client is still availble read each
   // byte and print to the serial monitor
-  while (client.available()) {
+  while (client.available())
+  {
     char c = 0;
     client.readBytes(&c, 1);
     Serial.print(c);
   }
 }
 
-void loop() {
+void loop()
+{
   // put your main code here, to run repeatedly:
-
 }
