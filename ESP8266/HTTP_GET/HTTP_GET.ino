@@ -141,7 +141,7 @@ void makeHTTPRequest()
   // the chunked data length values at the start of the body
   //
   // peek() will look at the character, but not take it off the queue
-  while (client.available() && client.peek() != '{')
+  while (client.available() && client.peek() != '{' && client.peek() != '[')
   {
     char c = 0;
     client.readBytes(&c, 1);
